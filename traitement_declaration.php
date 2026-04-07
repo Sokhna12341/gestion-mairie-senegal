@@ -1,36 +1,42 @@
 <?php
-// 1. Connexion à la base
+// 1. Connexion à la base de données
 $conn = mysqli_connect("localhost", "root", "", "mairie_final_db");
-if (!$conn) { die("Erreur de connexion"); }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if (!$conn) {
+    die("La connexion a échoué : " . mysqli_connect_error());
+}
+
+// 2. Récupération simplifiée des données (Pas de condition compliquée ici)
+// On utilise les noms qui sont dans ton fichier index.php
+$nom = isset($_POST['nom']) ? mysqli_real_escape_string($conn, $_POST['nom']) : '';
+$prenom = isset($_POST['prenom']) ? mysqli_real_escape_string($conn, $_POST['prenom']) : '';
+$date_naiss = isset($_POST['date_naissance']) ? $_POST['date_naissance'] : '';
+$lieu_naiss = isset($_POST['lieu_naissance']) ? $_POST['lieu_naissance'] : '';
+$nom_pere = isset($_POST['nom_pere']) ? $_POST['nom_pere'] : '';
+$nom_mere = isset($_POST['nom_mere']) ? $_POST['nom_mere'] : '';
+$email = isset($_POST['email_parent']) ? $_POST['email_parent'] : '';
+$tel = isset($_POST['telephone']) ? $_POST['telephone'] : '';
+
+// 3. On vérifie juste si le nom est vide pour savoir si le formulaire a été rempli
+if ($nom != '') {
     
-    // Récupération des données du formulaire
-    $nom    = isset($_POST['nom']) ? mysqli_real_escape_string($conn, $_POST['nom']) : "";
-    $prenom = isset($_POST['prenom']) ? mysqli_real_escape_string($conn, $_POST['prenom']) : "";
-    
-    // On crée l'identité complète pour la colonne 'nom_demandeur'
-    $nom_complet = $prenom . " " . $nom;
-
-    // Valeurs par défaut pour ta table
-    $type_acte = "Déclaration de Naissance";
-    $statut = "En attente"; // Ou "Validé" selon ton choix
-    $choix = "Mairie"; // Valeur par défaut pour choix_reception
-
-    // 2. INSERTION AVEC LES BONS NOMS DE COLONNES
-    $sql = "INSERT INTO demandes (nom_demandeur, type_acte, statut, choix_reception) 
-            VALUES ('$nom_complet', '$type_acte', '$statut', '$choix')";
+    // 4. On enregistre dans la table 'demandes'
+    $sql = "INSERT INTO demandes (nom, prenom, date_naissance, lieu_naissance, nom_pere, nom_mere, email_parent, telephone) 
+            VALUES ('$nom', '$prenom', '$date_naiss', '$lieu_naiss', '$nom_pere', '$nom_mere', '$email', '$tel')";
 
     if (mysqli_query($conn, $sql)) {
-        // 3. Succès ! On récupère l'ID
+        // Succès ! On récupère le numéro et on va à la confirmation
         $id = mysqli_insert_id($conn);
-        
-        // Redirection vers la page de confirmation
-        header("Location: confirmation.php?id=" . $id . "&type=declaration");
+        header("Location: confirmation.php?id=$id");
         exit();
     } else {
-        echo "Erreur lors de l'enregistrement : " . mysqli_error($conn);
+        echo "Erreur de base de données : " . mysqli_error($conn);
     }
+
+} else {
+    // Si on arrive ici sans avoir rempli le nom
+    echo "<h1>Erreur : Le formulaire est vide</h1>";
+    echo "<p>Veuillez repartir de la page d'accueil : <a href='index.php'>Cliquer ici</a></p>";
 }
 
 mysqli_close($conn);
